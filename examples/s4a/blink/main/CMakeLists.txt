@@ -1,0 +1,114 @@
+# idf_build_get_property(target IDF_TARGET)
+# idf_build_get_property(arch IDF_TARGET_ARCH)
+
+# Clear the default COMPILE_OPTIONS which include a lot of C/C++ specific compiler flags that the Swift compiler will not accept
+# get_target_property(var ${COMPONENT_LIB} COMPILE_OPTIONS)
+set_target_properties(${COMPONENT_LIB} PROPERTIES COMPILE_OPTIONS "")
+
+# if(${target} STREQUAL "esp32s3")
+#     # set(march_flag "rv32imc_zicsr_zifencei")
+#     # set(mabi_flag "ilp32")
+# endif()
+
+# Currently trying to avoid any onward dependencies in the imported clang header and keep it isolated.
+# This probably won't last but it's worth a try.
+
+# we might need this some day...
+# -Xcc -march=${march_flag} -Xcc -mabi=${mabi_flag}
+
+target_compile_options(${COMPONENT_LIB} PUBLIC "$<$<COMPILE_LANGUAGE:Swift>:SHELL:
+        -target xtensa-none-none-eabi -nostdimport -enforce-exclusivity=unchecked -no-link-objc-runtime
+        -Xfrontend -disable-reflection-metadata -Xfrontend -disable-stack-protector
+        -Xfrontend -disable-implicit-concurrency-module-import -Xfrontend -disable-implicit-string-processing-module-import
+        -Xfrontend -function-sections -enable-experimental-feature Embedded -wmo -parse-as-library -Osize
+        -Xcc -fno-pic -Xcc -fno-pie
+        -pch-output-dir /tmp
+        -Xfrontend -enable-single-module-llvm-emission
+        -I /Users/carl/Documents/Code/S4A/BuildEngine/uSwift-ARM 
+        -import-bridging-header ${CMAKE_CURRENT_LIST_DIR}/main.h
+    >")
+
+        # -I "/Applications/S4A IDE unsandboxed.app/Contents/XPCServices/BuildEngine.xpc/Contents/Resources/uSwift-ARM/Embedded"
+
+
+# Enable Swift support in CMake, force Whole Module builds (required by Embedded Swift), and use "CMAKE_Swift_COMPILER_WORKS" to
+# skip the trial compilations which don't (yet) correctly work when cross-compiling.
+set(CMAKE_Swift_COMPILER_WORKS YES)
+set(CMAKE_Swift_COMPILATION_MODE_DEFAULT wholemodule)
+set(CMAKE_Swift_COMPILATION_MODE wholemodule)
+set(CMAKE_Swift_COMPILER "/Applications/S4A IDE unsandboxed.app/Contents/XPCServices/BuildEngine.xpc/Contents/MacOS/swift")
+enable_language(Swift)
+
+# needed?
+
+# add_custom_command(
+#     TARGET ${COMPONENT_LIB}
+#     POST_BUILD
+#     COMMAND ${CMAKE_OBJCOPY} --remove-section .swift_modhash
+#             $<TARGET_FILE:${COMPONENT_LIB}> $<TARGET_FILE:${COMPONENT_LIB}>
+# )
+
+
+find_program(SWIFTC swiftc REQUIRED)
+
+# will be /Applications/S4A IDE unsandboxed.app ... MacOS/llc-xtensa
+set(LLC_PATH "/custom/path/to/llc")
+
+
+set(BC_DIR "${CMAKE_BINARY_DIR}/bitcode")
+set(OBJ_DIR "${CMAKE_BINARY_DIR}/objects")
+set(EXE_FILE "${CMAKE_BINARY_DIR}/myprogram")
+
+# Ensure output directories exist
+file(MAKE_DIRECTORY ${BC_DIR})
+file(MAKE_DIRECTORY ${OBJ_DIR})
+
+# List of Swift source files
+set(SWIFT_SOURCES main.swift utils.swift)
+
+set(BC_FILES "")
+set(OBJ_FILES "")
+
+# Step 1 & 2: Compile Swift to LLVM bitcode and object files
+foreach(SRC_FILE ${SWIFT_SOURCES})
+    # Extract filename without extension
+    get_filename_component(FNAME ${SRC_FILE} NAME_WE)
+
+    # Define bitcode and object file paths
+    set(BC_FILE "${BC_DIR}/${FNAME}.bc")
+    set(OBJ_FILE "${OBJ_DIR}/${FNAME}.o")
+
+    # Compile Swift to LLVM bitcode
+    add_custom_command(
+        OUTPUT ${BC_FILE}
+        COMMAND ${SWIFTC} -emit-bc ${CMAKE_SOURCE_DIR}/${SRC_FILE} -o ${BC_FILE}
+        DEPENDS ${SRC_FILE}
+        COMMENT "Generating LLVM bitcode for ${SRC_FILE}"
+    )
+
+    # Convert LLVM bitcode to object file
+    add_custom_command(
+        OUTPUT ${OBJ_FILE}
+        COMMAND /Users/carl/Documents/Code/llvm-project/llvm/build/bin/llc ${BC_FILE} -filetype=obj -o ${OBJ_FILE}
+        DEPENDS ${BC_FILE}
+        COMMENT "Converting ${BC_FILE} to object file"
+    )
+
+    # Collect output files
+    list(APPEND BC_FILES ${BC_FILE})
+    list(APPEND OBJ_FILES ${OBJ_FILE})
+endforeach()
+
+# Step 3: Link object files to create the executable
+add_custom_command(
+    OUTPUT ${EXE_FILE}
+    COMMAND clang ${OBJ_FILES} -o ${EXE_FILE} -lc++
+    DEPENDS ${OBJ_FILES}
+    COMMENT "Linking object files to create ${EXE_FILE}"
+)
+
+# Create a custom target to trigger the full chain
+add_custom_target(swift_build_chain ALL
+    DEPENDS ${EXE_FILE}
+    COMMENT "Running the full custom Swift build chain..."
+)
