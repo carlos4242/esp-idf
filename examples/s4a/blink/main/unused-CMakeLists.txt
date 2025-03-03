@@ -1,9 +1,11 @@
+
+
 # idf_build_get_property(target IDF_TARGET)
 # idf_build_get_property(arch IDF_TARGET_ARCH)
 
-# Clear the default COMPILE_OPTIONS which include a lot of C/C++ specific compiler flags that the Swift compiler will not accept
+# # Clear the default COMPILE_OPTIONS which include a lot of C/C++ specific compiler flags that the Swift compiler will not accept
 # get_target_property(var ${COMPONENT_LIB} COMPILE_OPTIONS)
-set_target_properties(${COMPONENT_LIB} PROPERTIES COMPILE_OPTIONS "")
+# set_target_properties(${COMPONENT_LIB} PROPERTIES COMPILE_OPTIONS "")
 
 # if(${target} STREQUAL "esp32s3")
 #     # set(march_flag "rv32imc_zicsr_zifencei")
@@ -16,7 +18,7 @@ set_target_properties(${COMPONENT_LIB} PROPERTIES COMPILE_OPTIONS "")
 # we might need this some day...
 # -Xcc -march=${march_flag} -Xcc -mabi=${mabi_flag}
 
-target_compile_options(${COMPONENT_LIB} PUBLIC "$<$<COMPILE_LANGUAGE:Swift>:SHELL:
+target_compile_options(Blink PUBLIC "$<$<COMPILE_LANGUAGE:Swift>:SHELL:
         -target xtensa-none-none-eabi -nostdimport -enforce-exclusivity=unchecked -no-link-objc-runtime
         -Xfrontend -disable-reflection-metadata -Xfrontend -disable-stack-protector
         -Xfrontend -disable-implicit-concurrency-module-import -Xfrontend -disable-implicit-string-processing-module-import
@@ -49,66 +51,74 @@ enable_language(Swift)
 # )
 
 
-find_program(SWIFTC swiftc REQUIRED)
+# find_program(SWIFTC swiftc REQUIRED)
 
 # will be /Applications/S4A IDE unsandboxed.app ... MacOS/llc-xtensa
-set(LLC_PATH "/custom/path/to/llc")
+# set(LLC_PATH "/custom/path/to/llc")
 
 
-set(BC_DIR "${CMAKE_BINARY_DIR}/bitcode")
-set(OBJ_DIR "${CMAKE_BINARY_DIR}/objects")
-set(EXE_FILE "${CMAKE_BINARY_DIR}/myprogram")
+# set(BC_DIR "${CMAKE_BINARY_DIR}/bitcode")
+# set(OBJ_DIR "${CMAKE_BINARY_DIR}/objects")
+# set(EXE_FILE "${CMAKE_BINARY_DIR}/myprogram")
 
-# Ensure output directories exist
-file(MAKE_DIRECTORY ${BC_DIR})
-file(MAKE_DIRECTORY ${OBJ_DIR})
+# # Ensure output directories exist
+# file(MAKE_DIRECTORY ${BC_DIR})
+# file(MAKE_DIRECTORY ${OBJ_DIR})
 
-# List of Swift source files
-set(SWIFT_SOURCES main.swift utils.swift)
+# # List of Swift source files
+# set(SWIFT_SOURCES main.swift)
 
-set(BC_FILES "")
-set(OBJ_FILES "")
+# set(BC_FILES "")
+# set(OBJ_FILES "")
 
 # Step 1 & 2: Compile Swift to LLVM bitcode and object files
-foreach(SRC_FILE ${SWIFT_SOURCES})
-    # Extract filename without extension
-    get_filename_component(FNAME ${SRC_FILE} NAME_WE)
+# foreach(SRC_FILE ${SWIFT_SOURCES})
+#     # Extract filename without extension
+#     get_filename_component(FNAME ${SRC_FILE} NAME_WE)
 
-    # Define bitcode and object file paths
-    set(BC_FILE "${BC_DIR}/${FNAME}.bc")
-    set(OBJ_FILE "${OBJ_DIR}/${FNAME}.o")
+#     # Define bitcode and object file paths
+#     set(BC_FILE "${BC_DIR}/${FNAME}.bc")
+#     set(OBJ_FILE "${OBJ_DIR}/${FNAME}.o")
 
-    # Compile Swift to LLVM bitcode
-    add_custom_command(
-        OUTPUT ${BC_FILE}
-        COMMAND ${SWIFTC} -emit-bc ${CMAKE_SOURCE_DIR}/${SRC_FILE} -o ${BC_FILE}
-        DEPENDS ${SRC_FILE}
-        COMMENT "Generating LLVM bitcode for ${SRC_FILE}"
-    )
+#     # Compile Swift to LLVM bitcode
+#     add_custom_command(
+#         OUTPUT ${BC_FILE}
+#         COMMAND ${SWIFTC} -emit-bc ${CMAKE_SOURCE_DIR}/${SRC_FILE} -o ${BC_FILE}
+#         DEPENDS ${SRC_FILE}
+#         COMMENT "Generating LLVM bitcode for ${SRC_FILE}"
+#     )
 
-    # Convert LLVM bitcode to object file
-    add_custom_command(
-        OUTPUT ${OBJ_FILE}
-        COMMAND /Users/carl/Documents/Code/llvm-project/llvm/build/bin/llc ${BC_FILE} -filetype=obj -o ${OBJ_FILE}
-        DEPENDS ${BC_FILE}
-        COMMENT "Converting ${BC_FILE} to object file"
-    )
+#     # Convert LLVM bitcode to object file
+#     add_custom_command(
+#         OUTPUT ${OBJ_FILE}
+#         COMMAND /Users/carl/Documents/Code/llvm-project/llvm/build/bin/llc ${BC_FILE} -filetype=obj -o ${OBJ_FILE}
+#         DEPENDS ${BC_FILE}
+#         COMMENT "Converting ${BC_FILE} to object file"
+#     )
 
-    # Collect output files
-    list(APPEND BC_FILES ${BC_FILE})
-    list(APPEND OBJ_FILES ${OBJ_FILE})
-endforeach()
+#     # Collect output files
+#     list(APPEND BC_FILES ${BC_FILE})
+#     list(APPEND OBJ_FILES ${OBJ_FILE})
+# endforeach()
 
 # Step 3: Link object files to create the executable
-add_custom_command(
-    OUTPUT ${EXE_FILE}
-    COMMAND clang ${OBJ_FILES} -o ${EXE_FILE} -lc++
-    DEPENDS ${OBJ_FILES}
-    COMMENT "Linking object files to create ${EXE_FILE}"
-)
+# add_custom_command(
+#     OUTPUT ${EXE_FILE}
+#     COMMAND clang ${OBJ_FILES} -o ${EXE_FILE} -lc++
+#     DEPENDS ${OBJ_FILES}
+#     COMMENT "Linking object files to create ${EXE_FILE}"
+# )
 
-# Create a custom target to trigger the full chain
-add_custom_target(swift_build_chain ALL
-    DEPENDS ${EXE_FILE}
-    COMMENT "Running the full custom Swift build chain..."
-)
+# # Create a custom target to trigger the full chain
+# add_custom_target(swift_build_chain ALL
+#     DEPENDS ${EXE_FILE}
+#     COMMENT "Running the full custom Swift build chain..."
+# )
+
+# idf_component_register(
+#     SRCS "main.swift"
+#     # INCLUDE_DIRS "include"
+# )
+
+target_sources(Blink PRIVATE main.swift)
+
