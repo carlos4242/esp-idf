@@ -94,6 +94,10 @@ void turn_led_off()
     blink_led(false);
 }
 
+void wait(int ms) {
+    vTaskDelay(ms / portTICK_PERIOD_MS);
+}
+
 // void app_main(void)
 // {
 
