@@ -3,10 +3,9 @@ cmake_minimum_required(VERSION 3.16)
 # include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 # "Trim" the build. Include the minimal set of components, main, and anything it depends on.
 # idf_build_set_property(MINIMAL_BUILD ON)
-# -I "/Applications/S4A IDE unsandboxed.app/Contents/XPCServices/BuildEngine.xpc/Contents/Resources/uSwift-ARM/Embedded"
+
 # Enable Swift support in CMake, force Whole Module builds (required by Embedded Swift), and use "CMAKE_Swift_COMPILER_WORKS" to
 # skip the trial compilations which don't (yet) correctly work when cross-compiling.
-
 set(CMAKE_Swift_COMPILER_WORKS YES)
 set(CMAKE_Swift_COMPILATION_MODE_DEFAULT wholemodule)
 set(CMAKE_Swift_COMPILATION_MODE wholemodule)
@@ -15,27 +14,8 @@ enable_language(Swift)
 
 project(s4a_blink LANGUAGES C Swift)
 
-# add_executable(Blink main.swift)
-
 # This approach won't work while we have custom commands in a chain.
-# target_compile_options(Blink PUBLIC "$<$<COMPILE_LANGUAGE:Swift>:SHELL:
-#         -target xtensa-none-none-eabi -nostdimport -enforce-exclusivity=unchecked -no-link-objc-runtime
-#         -Xfrontend -disable-reflection-metadata -Xfrontend -disable-stack-protector
-#         -Xfrontend -disable-implicit-concurrency-module-import -Xfrontend -disable-implicit-string-processing-module-import
-#         -Xfrontend -function-sections -enable-experimental-feature Embedded -wmo -parse-as-library -Osize
-#         -Xcc -fno-pic -Xcc -fno-pie
-#         -pch-output-dir /tmp
-#         -Xfrontend -enable-single-module-llvm-emission
-#         -I /Users/carl/Documents/Code/S4A/BuildEngine/uSwift-ARM 
-#         -import-bridging-header ${CMAKE_CURRENT_LIST_DIR}/main.h
-#     >")
-
-# add_custom_command(
-#     TARGET ${COMPONENT_LIB}
-#     POST_BUILD
-#     COMMAND ${CMAKE_OBJCOPY} --remove-section .swift_modhash
-#             $<TARGET_FILE:${COMPONENT_LIB}> $<TARGET_FILE:${COMPONENT_LIB}>
-# )
+# target_compile_options(Blink PUBLIC ...)
 
 # Set the compiler options in a variable
 # Use our ARM microswift standard library as a general 32-bit version, here for Xtensa.
@@ -94,6 +74,11 @@ set(SWIFT_SOURCES main.swift)
 set(BC_FILES "")
 set(OBJ_FILES "")
 
+add_executable(Blink main.swift)
+
+add_subdirectory(s4alib)
+# add_subdirectory(main)
+
 # Step 1 & 2: Compile Swift to LLVM bitcode and object files
 foreach(SRC_FILE ${SWIFT_SOURCES})
     # Extract filename without extension
@@ -125,19 +110,13 @@ foreach(SRC_FILE ${SWIFT_SOURCES})
 endforeach()
 
 # Step 3: Link object files to create the executable
-#  was ....COMMAND clang ${OBJ_FILES} -o ${EXE_FILE} -lc++
-
 add_custom_command(
-    OUTPUT ${EXE_FILE}
+    TARGET Blink
+    POST_BUILD
+    # OUTPUT ${EXE_FILE}
     COMMAND ${CMAKE_LINKER} ${OBJ_FILES} -o ${EXE_FILE}
     DEPENDS ${OBJ_FILES}
     COMMENT "Linking object files to create ${EXE_FILE}"
-)
-
-# Create a custom target to trigger the full chain
-add_custom_target(microswift_custom_build ALL
-    DEPENDS ${EXE_FILE}
-    COMMENT "Running the full custom Swift build chain..."
 )
 
 # idf_component_register(
@@ -146,15 +125,3 @@ add_custom_target(microswift_custom_build ALL
 # )
 
 # target_sources(Blink PRIVATE main.swift)
-
-# get_target_property(output Blink TYPE)
-# message(STATUS "Blink target type: ${output}")
-
-# add_subdirectory(main)
-# add_subdirectory(s4alib)
-
-# get_property(targets DIRECTORY PROPERTY TARGETS)
-# message(STATUS "Available targets: ${targets}")
-
-# get_target_property(TARGET_TYPE Blink TYPE)
-# message(STATUS "Blink target type: ${TARGET_TYPE}")
