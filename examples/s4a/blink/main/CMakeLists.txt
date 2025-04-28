@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_Swift_COMPILER_WORKS YES)
 set(CMAKE_Swift_COMPILATION_MODE_DEFAULT wholemodule)
 set(CMAKE_Swift_COMPILATION_MODE wholemodule)
-set(CMAKE_Swift_COMPILER "/Applications/S4A IDE unsandboxed.app/Contents/XPCServices/BuildEngine.xpc/Contents/MacOS/swiftc")
+set(CMAKE_Swift_COMPILER "/Applications/S4A IDE Pro.app/Contents/XPCServices/BuildEngine.xpc/Contents/MacOS/swiftc")
 enable_language(Swift)
 
 # This approach won't work while we have custom commands in a chain.
@@ -48,11 +48,11 @@ set(SWIFT_COMPILE_OPTIONS
 )
 
 find_program(SWIFTC swiftc 
-        PATHS "/Applications/S4A IDE unsandboxed.app/Contents/XPCServices/BuildEngine.xpc/Contents/MacOS"
+        PATHS "/Applications/S4A IDE Pro.app/Contents/XPCServices/BuildEngine.xpc/Contents/MacOS"
         NO_DEFAULT_PATH  # Ignore system default paths
         REQUIRED)
 
-# will be /Applications/S4A IDE unsandboxed.app ... MacOS/llc-xtensa
+# will be /Applications/S4A IDE Pro.app ... MacOS/llc-xtensa
 set(LLC_PATH "/Users/carl/Documents/Code/llvm-project/llvm/build/bin/llc")
 set(BC_DIR "${CMAKE_BINARY_DIR}/bitcode")
 set(OBJ_DIR "${CMAKE_BINARY_DIR}/objects")
