@@ -5,7 +5,6 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_Swift_COMPILER_WORKS YES)
 set(CMAKE_Swift_COMPILATION_MODE_DEFAULT wholemodule)
 set(CMAKE_Swift_COMPILATION_MODE wholemodule)
-set(CMAKE_Swift_COMPILER "/Applications/S4A IDE Pro.app/Contents/XPCServices/BuildEngine.xpc/Contents/MacOS/swiftc")
 enable_language(Swift)
 
 # This approach won't work while we have custom commands in a chain.
@@ -20,6 +19,22 @@ enable_language(Swift)
 
 # Note: there must be a better way to get the standard include directories but I'm not familiar
 # enough with cmake and the IDF/ESP ways.
+
+# If you have the normal basic product, downloaded from the App Store.
+# set(S4A_APP "/Applications/S4A IDE.app")
+
+# If you have the Pro version (non sandboxed) downloaded from the website.
+set(S4A_APP "/Applications/S4A IDE Pro.app")
+
+set(S4A_BUILD_ENGINE ${S4A_APP}/Contents/XPCServices/BuildEngine.xpc/Contents)
+set(S4A_ARM_STDLIB ${S4A_BUILD_ENGINE}/Resources/uSwift-ARM/Embedded)
+set(S4A_SHIMS ${S4A_BUILD_ENGINE}/Resources/uSwiftShims)
+set(ESP_XTENSA_ELF /Users/carl/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf)
+# will be /Applications/S4A IDE Pro.app ... MacOS/llc-xtensa
+set(LLC_PATH "/Users/carl/Documents/Code/llvm-project/llvm/build/bin/llc")
+
+set(CMAKE_Swift_COMPILER ${S4A_BUILD_ENGINE}/MacOS/swiftc)
+
 
 set(SWIFT_COMPILE_OPTIONS
     -target arm-none-linux-gnueabihf
@@ -38,22 +53,26 @@ set(SWIFT_COMPILE_OPTIONS
     -Xcc -fno-pie
     -pch-output-dir /tmp
     -Xfrontend -enable-single-module-llvm-emission
-    -I /Users/carl/Documents/Code/S4A/BuildEngine/uSwift-ARM/Embedded
-    -I /Users/carl/Documents/Code/S4A/BuildEngine/uSwiftShims/Embedded
-    -I /Users/carl/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/include
-    -I /Users/carl/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/include
-    -I /Users/carl/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/xtensa-esp-elf/include/sys
-    -I /Users/carl/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/picolibc/include/sys
+    -I ${S4A_ARM_STDLIB}
+    -I ${S4A_SHIMS}
+    -I ${ESP_XTENSA_ELF}/lib/gcc/xtensa-esp-elf/14.2.0/include
+    -I ${ESP_XTENSA_ELF}/xtensa-esp-elf/include
+    -I ${ESP_XTENSA_ELF}/xtensa-esp-elf/include/sys
+    -I ${ESP_XTENSA_ELF}/picolibc/include/sys
     -import-bridging-header ${CMAKE_CURRENT_LIST_DIR}/main.h
 )
 
 find_program(SWIFTC swiftc 
-        PATHS "/Applications/S4A IDE Pro.app/Contents/XPCServices/BuildEngine.xpc/Contents/MacOS"
+        PATHS ${S4A_BUILD_ENGINE}/MacOS
         NO_DEFAULT_PATH  # Ignore system default paths
         REQUIRED)
 
-# will be /Applications/S4A IDE Pro.app ... MacOS/llc-xtensa
-set(LLC_PATH "/Users/carl/Documents/Code/llvm-project/llvm/build/bin/llc")
+# find_program(SWIFTC swiftc 
+#         PATHS "/Applications/S4A IDE Pro.app/Contents/XPCServices/BuildEngine.xpc/Contents/MacOS"
+#         NO_DEFAULT_PATH  # Ignore system default paths
+#         REQUIRED)
+
+
 set(BC_DIR "${CMAKE_BINARY_DIR}/bitcode")
 set(OBJ_DIR "${CMAKE_BINARY_DIR}/objects")
 set(EXE_FILE "${CMAKE_BINARY_DIR}/blink.elf")
@@ -100,18 +119,22 @@ foreach(SRC_FILE ${SWIFT_SOURCES})
     list(APPEND OBJ_FILES ${OBJ_FILE})
 endforeach()
 
+add_library(custom_objects OBJECT ${OBJ_FILES})
+set_target_properties(custom_objects PROPERTIES LINKER_LANGUAGE C)
+
 # Step 3: Link object files to create the executable
-add_custom_command(
-    # TARGET blink.elf
-    POST_BUILD
-    OUTPUT ${EXE_FILE}
-    COMMAND ${CMAKE_LINKER} ${OBJ_FILES} -o ${EXE_FILE}
-    DEPENDS ${OBJ_FILES}
-    COMMENT "Linking object files to create ${EXE_FILE}"
-)
+# add_custom_command(
+#     # TARGET blink.elf
+#     POST_BUILD
+#     OUTPUT ${EXE_FILE}
+#     COMMAND ${CMAKE_LINKER} ${OBJ_FILES} -o ${EXE_FILE}
+#     DEPENDS ${OBJ_FILES}
+#     COMMENT "Linking object files to create ${EXE_FILE}"
+# )
 
 # Temporary hack, because I can't get add_executable() to work yet
-add_custom_target(blink_main_subdir.elf DEPENDS ${EXE_FILE})
+# add_custom_target(blink_main_subdir.elf DEPENDS ${OBJ_FILES})
+target_link_libraries(blink.elf custom_objects)
 
 # add_custom_target(blink.elf ALL
 #     DEPENDS ${EXE_FILE}

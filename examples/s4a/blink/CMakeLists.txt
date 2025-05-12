@@ -10,12 +10,17 @@ project(s4a_blink LANGUAGES C)
 
 # ESP-IDF does add_executable(${project_elf} "${project_elf_src}")
 
+add_executable(blink.elf dummy.c)
+set_source_files_properties(dummy.c PROPERTIES HEADER_FILE_ONLY TRUE)
+
+# add_custom_target(blink ALL
+#     # DEPENDS ${EXE_FILE}
+# )
+
 # add_subdirectory(s4alib)
 add_subdirectory(main)
 
-set(EXE_FILE "${CMAKE_BINARY_DIR}/blink.elf")
+# set(EXE_FILE "${CMAKE_BINARY_DIR}/blink.elf")
 
-add_custom_target(blink.elf ALL
-    DEPENDS ${EXE_FILE}
-)
+
 

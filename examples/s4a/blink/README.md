@@ -27,3 +27,9 @@ func app_main() {
 ```
 
 ...wrapped around the main code so that it runs on ESP32 core 1 and cooperates with the FreeRTOS scheduler as normal for ESP.
+
+
+### Getting started
+
+Use cmake -B build -S . -G Ninja
+
