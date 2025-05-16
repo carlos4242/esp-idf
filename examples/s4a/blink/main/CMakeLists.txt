@@ -5,7 +5,8 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_Swift_COMPILER_WORKS YES)
 set(CMAKE_Swift_COMPILATION_MODE_DEFAULT wholemodule)
 set(CMAKE_Swift_COMPILATION_MODE wholemodule)
-enable_language(Swift)
+
+# enable_language(Swift)
 
 # This approach won't work while we have custom commands in a chain.
 # target_compile_options(Blink PUBLIC ...)
@@ -29,8 +30,11 @@ set(S4A_APP "/Applications/S4A IDE Pro.app")
 set(S4A_BUILD_ENGINE ${S4A_APP}/Contents/XPCServices/BuildEngine.xpc/Contents)
 set(S4A_ARM_STDLIB ${S4A_BUILD_ENGINE}/Resources/uSwift-ARM/Embedded)
 set(S4A_SHIMS ${S4A_BUILD_ENGINE}/Resources/uSwiftShims)
+# There should be a constant from the ESP-IDF we can use here, probably.
 set(ESP_XTENSA_ELF /Users/carl/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf)
-# will be /Applications/S4A IDE Pro.app ... MacOS/llc-xtensa
+
+# At the moment this points to my hand-built llc but in the ultima,
+# will be something like /Applications/S4A IDE Pro.app ... MacOS/llc-xtensa
 set(LLC_PATH "/Users/carl/Documents/Code/llvm-project/llvm/build/bin/llc")
 
 set(CMAKE_Swift_COMPILER ${S4A_BUILD_ENGINE}/MacOS/swiftc)
