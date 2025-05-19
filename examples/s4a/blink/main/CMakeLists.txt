@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 
+idf_component_register(
+    SRCS
+        /dev/null
+    PRIV_INCLUDE_DIRS "."
+)
+
 # Enable Swift support in CMake, force Whole Module builds (required by Embedded Swift), and use "CMAKE_Swift_COMPILER_WORKS" to
 # skip the trial compilations which don't (yet) correctly work when cross-compiling.
 set(CMAKE_Swift_COMPILER_WORKS YES)
@@ -138,7 +144,10 @@ set_target_properties(custom_objects PROPERTIES LINKER_LANGUAGE C)
 
 # Temporary hack, because I can't get add_executable() to work yet
 # add_custom_target(blink_main_subdir.elf DEPENDS ${OBJ_FILES})
-target_link_libraries(blink.elf custom_objects)
+# target_link_libraries(blink.elf custom_objects)
+target_link_libraries(${COMPONENT_LIB}
+    custom_objects)
+
 
 # add_custom_target(blink.elf ALL
 #     DEPENDS ${EXE_FILE}
