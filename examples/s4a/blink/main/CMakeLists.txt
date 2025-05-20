@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 idf_component_register(
     SRCS
         /dev/null
+    REQUIRES s4alib
     PRIV_INCLUDE_DIRS "."
 )
 
